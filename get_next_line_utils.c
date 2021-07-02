@@ -1,31 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.h                                    :+:      :+:    :+:   */
+/*   get_next_line_utils.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: echerell <echerell@student.21-school.ru    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/07/01 00:07:44 by echerell          #+#    #+#             */
-/*   Updated: 2021/07/02 22:50:49 by echerell         ###   ########.fr       */
+/*   Created: 2021/07/02 20:33:38 by echerell          #+#    #+#             */
+/*   Updated: 2021/07/02 22:55:47 by echerell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef GET_NEXT_LINE
-# define GET_NEXT_LINE
+#include "get_next_line.h"
 
-# include <stdlib.h>
-# include <unistd.h>
-// temporarily
-# define BUFFER_SIZE 16
-
-typedef struct s_thread
+t_thread	*lstnew_fd(int fd, char *buf)
 {
-	int				fd;
-	char			*strs;
-	struct s_thread	*next;
-} t_thread;
+	t_thread *new;
 
-int			get_next_line(int fd, char **line);
-t_thread	*lstnew_fd(int fd, char *buf);
-
-#endif
+	new = (t_thread *)malloc(sizeof(t_thread));
+	if (!new)
+		return (NULL);
+	new->fd = fd;
+	new->strs = buf;
+	new->next = NULL;
+	return (new);
+}
