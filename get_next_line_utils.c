@@ -6,26 +6,36 @@
 /*   By: echerell <echerell@student.21-school.ru    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/02 20:33:38 by echerell          #+#    #+#             */
-/*   Updated: 2021/07/03 17:59:51 by echerell         ###   ########.fr       */
+/*   Updated: 2021/07/04 01:22:59 by echerell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
-/*static size_t	ft_strlen(const char *s)
+void	del_thread(t_thread **threads, t_thread *del)
 {
-	size_t	n;
+	t_thread	*save;
 
-	n = 0;
-	while (s[n])
-		n++;
-	return (n);
-}*/
+	save = *threads;
+	if (*threads != del)
+	{
+		while (save && save->next != del)
+			save = save->next;
+		save->next = del->next;
+		free(del->strs);
+		free(del);
+	}
+	else
+	{
+		*threads = del->next;
+		free(del->strs);
+		free(del);
+	}
+}
 
 t_thread	*lstnew_fd(int fd, char *buf)
 {
-	t_thread *new;
+	t_thread	*new;
 
 	new = (t_thread *)malloc(sizeof(t_thread));
 	if (!new)
@@ -45,21 +55,21 @@ char	*mod_strjoin(char *s1, char *s2)
 
 	len = 0;
 	temp = 0;
-	i = 0;
-	while (s1 != NULL && s1[len])
+	i = -1;
+	while (s1 && s1[len])
 		len++;
-	while (s2 != NULL && s2[temp])
+	while (s2 && s2[temp])
 		temp++;
 	len += temp;
-	if ((s1 == NULL && s2 == NULL) || !(str = malloc(sizeof(*str) * (len + 1))))
+	str = malloc((len + 1) * sizeof(char));
+	if ((!s1 && !s2) || !str)
 		return (NULL);
 	temp = -1;
-	while ((++temp + i) < len && s1 != NULL && s1[temp])
+	while ((++temp + i + 1) < len && s1 && s1[temp])
 		str[temp] = s1[temp];
-	i--;
-	while ((temp + ++i) < len && s2 != NULL && s2[i])
+	while ((temp + ++i) < len && s2 && s2[i])
 		str[temp + i] = s2[i];
-	str[temp + i] = 0;
+	str[temp + i] = '\0';
 	free(s1);
 	free(s2);
 	return (str);
