@@ -6,7 +6,7 @@
 /*   By: echerell <echerell@student.21-school.ru    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/07/01 00:13:38 by echerell          #+#    #+#             */
-/*   Updated: 2021/07/02 23:48:18 by echerell         ###   ########.fr       */
+/*   Updated: 2021/07/03 22:09:48 by echerell         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,33 +14,75 @@
 // temporarily
 #include "stdio.h"
 
-/*static void	check(t_thread *threads)
+static void	del_thread(t_thread **threads, t_thread *del)
 {
-	//t_thread *save;
+	t_thread *save;
 
-	//save = *threads;
-	while (threads->next)
+	save = *threads;
+	if (*threads != del)
 	{
-		printf("fd = %d\nstring = %s\n", threads->fd, threads->strs);
-		threads = threads->next;
+		while (save && save->next != del)
+			save = save->next;
+		save->next = del->next;
+		free(del->strs);
+		free(del);
 	}
-}*/
+	else
+	{
+		*threads = del->next;
+		free(del->strs);
+		free(del);
+	}
+}
 
-static int	first_read(t_thread *thread, int fd, char *buf)
+static int	get_line(t_thread *thread, char **line)
+{
+	char	*offset;
+	int		i;
+
+	while(1)
+	{
+		i = 0;
+		while (thread->strs[i] != '\n' && thread->strs[i])
+			i++;
+		*line = mod_strjoin(*line, mod_substr(thread->strs, 0, i));
+		if (!(*line))
+			return (-1);
+		if (thread->strs[i] == '\n')
+		{
+			offset = mod_substr(thread->strs, i + 1, BUFFER_SIZE);
+			if (!offset)
+				return(-1);
+			free(thread->strs);
+			thread->strs = offset;
+			return (1);
+		}
+		else
+		{
+			ft_bzero(thread->strs, BUFFER_SIZE + 1);
+			if (!read(thread->fd, thread->strs, BUFFER_SIZE))
+				return (0);
+		}
+	}
+}
+
+static int	first_read(t_thread **thread, int fd, char *buf)
 {
 	int	read_ret;
 
 	read_ret = read(fd, buf, BUFFER_SIZE);
-	if (read_ret == -1)
+	if (read_ret <= 0)
+	{
+		free(buf);
+		return (read_ret);
+	}
+	buf[read_ret] = '\0';
+	*thread = lstnew_fd(fd, buf);
+	if (!thread)
 	{
 		free(buf);
 		return (-1);
 	}
-	if (read_ret == 0)
-		return (0);
-	thread = lstnew_fd(fd, buf);
-	if (!thread)
-		return (-1);
 	return (1);
 }
 
@@ -48,12 +90,12 @@ static int	goto_fd(t_thread **threads, t_thread *save, int fd, char *buf)
 {
 	save = *threads;
 	if (!(*threads))
-		return (first_read(*threads, fd, buf));
+		return (first_read(threads, fd, buf));
 	while (save->next && save->fd != fd)
 		save = save->next;
 	if (save->fd == fd)
 		return (1);
-	return (first_read(save->next, fd, buf));
+	return (first_read(&save->next, fd, buf));
 }
 
 int	get_next_line(int fd, char **line)
@@ -65,9 +107,29 @@ int	get_next_line(int fd, char **line)
 
 	buf = malloc((BUFFER_SIZE + 1) * (sizeof(char)));
 	if (BUFFER_SIZE < 1 || fd < 0 || !line || !buf)
+	{
+		if (buf)
+			free(buf);
 		return (-1);
+	}
 	save = NULL;
 	ret = goto_fd(&threads, save, fd, buf);
-	printf("fd = %d\nstring = %s\n", threads->fd, threads->strs);
+	if (!ret)
+	{
+		*line = malloc(sizeof(char *));
+		if (!*line)
+			return (-1);
+		line[0][0] = '\0';
+		return (0);
+	}
+	if (ret < 0)
+		return (-1);
+	*line = NULL;
+	save = threads;
+	while (save && save->fd != fd)
+		save = save->next;
+	ret = get_line(save, line);
+	if (ret < 1)
+		del_thread(&threads, save);
 	return (ret);
 }
